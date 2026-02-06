@@ -1,13 +1,13 @@
 import { useState } from "react";
 
-const Login = () => {
+const Login = (props) => {
 
     const [form, setForm] = useState({
         email: "",
         password: ""
     });
-    const [errors, setErrors] = useState({});
 
+    const [status, setStatus] = useState({ type: "", message: "" });
 
     const handleChnage = (e) => {
         console.log("Changed=" + e.target.name);
@@ -15,60 +15,53 @@ const Login = () => {
         setForm({
             ...form,
             [e.target.name]: e.target.value
-        });
-        setErrors((prev) => ({ ...prev, [e.target.name]: "" }));
+        })
 
 
     };
 
-    const validate = () => {
-        const nextErrors = {};
-        const email = form.email.trim();
-        const password = form.password.trim();
-
-        if (!email) {
-            nextErrors.email = "Email is required.";
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            nextErrors.email = "Enter a valid email address.";
-        }
-
-        if (!password) {
-            nextErrors.password = "Password is required.";
-        } else if (password.length < 6) {
-            nextErrors.password = "Password must be at least 6 characters.";
-        }
-
-        return nextErrors;
-    };
-
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        const nextErrors = validate();
-        setErrors(nextErrors);
-        if (Object.keys(nextErrors).length > 0) {
-            return;
+        setStatus({ type: "", message: "" });
+
+        try {
+            const response = await fetch(`http://localhost:3001/users?email=${form.email}&password=${form.password}`);
+            const users = await response.json();
+
+            if (users.length > 0) {
+                setStatus({ type: "success", message: "Login successful!" });
+            } else {
+                setStatus({ type: "error", message: "Invalid email or password." });
+            }
+        } catch (error) {
+            setStatus({ type: "error", message: "Login failed. Please try again." });
         }
-        console.log("Submitting login:", { ...form });
     };
 
     return (
-        <form method="POST" onSubmit={handleSubmit} noValidate>
-            <h2>Login Form</h2>
-            <div>
-                <label>Emailid</label>
-                <input type="text" name="email" value={form.email} onChange={handleChnage} />
-                {errors.email ? <div className="error">{errors.email}</div> : null}
+        <div className="auth-form-container">
+            <form method="POST" onSubmit={handleSubmit}>
+                <h2>Login Form</h2>
+                {status.message && (
+                    <div className={status.type === "error" ? "error" : "success"}>
+                        {status.message}
+                    </div>
+                )}
+                <div>
+                    <label>Emailid</label>
+                    <input type="text" name="email" value={form.email} onChange={handleChnage} />
 
-            </div>
+                </div>
 
-            <div>
-                <label>Password</label>
-                <input type="password" name="password" value={form.password} onChange={handleChnage} />
-                {errors.password ? <div className="error">{errors.password}</div> : null}
+                <div>
+                    <label>Password</label>
+                    <input type="password" name="password" value={form.password} onChange={handleChnage} />
 
-            </div>
-            <button type="submit">Login</button>
-        </form>
+                </div>
+                <button type="submit">Login</button>
+            </form>
+            <button className="link-btn" onClick={() => props.onFormSwitch('register')}>Don't have an account? Register here.</button>
+        </div>
     );
 }
 
